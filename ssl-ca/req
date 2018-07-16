@@ -1,0 +1,33 @@
+#!/bin/bash
+#
+# $HeadURL: https://svn.oucs.ox.ac.uk/sysdev/src/packages/s/sysdev-utils/tags/0.18/bin/req $
+# $LastChangedRevision: 25149 $
+# $LastChangedDate: 2014-10-20 16:10:06 +0100 (Mon, 20 Oct 2014) $
+# $LastChangedBy: dom $
+#
+
+set -e
+
+source /usr/share/libsysdev-common-bash/sysdev_common.sh 
+
+SERVER=$1
+shift
+
+need_var SERVER
+
+SUBJECT="/C=GB/ST=Oxfordshire/L=Oxford/O=University of Oxford/OU=IT Services/CN=${SERVER}/emailAddress=sysdev@it.ox.ac.uk"
+
+umask 0077
+
+if test $# -eq 0; then
+    # Generate new key and CSR
+    openssl req -out "${SERVER}.req.pem" -keyout "${SERVER}.key.pem" -newkey rsa:2048 -nodes -subj "${SUBJECT}" -sha256
+else
+    # Generate CSR from existing key
+    KEY=$1
+    shift
+    need_file "$KEY" "old key" "r"
+    openssl req -out "${SERVER}.req.pem" -key "${KEY}" -new -subj "${SUBJECT}" -sha256
+fi
+
+chmod 0644 "${SERVER}.req.pem"

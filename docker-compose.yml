@@ -1,0 +1,40 @@
+version: '2'
+services:
+  midpoint-db:
+    image: postgres:9.6
+    container_name: midpoint-db
+    domainname: midpoint
+    hostname: midpoint-db
+    networks:
+      - iam
+    environment:
+      - POSTGRES_USER=midpoint
+      - POSTGRES_PASSWORD=midpoint
+      - POSTGRES_DB=midpoint
+    expose:
+      - "5432"
+  midpoint:
+    depends_on:
+      - midpoint-db
+    build: midpoint/
+    image: midpoint
+    container_name: midpoint
+    domainname: midpoint
+    hostname: midpoint
+    ports:
+      - "8080:8080"
+    networks:
+      - iam
+  ssl-ca:
+    build: ssl-ca/
+    image: ssl-ca
+    container_name: ssl-ca
+    volumes:
+      - ssl-certs:/var/lib/ssl-ca/certs
+      - ssl-keys:/var/lib/ssl-ca/keys
+networks:
+  iam:
+volumes:
+  postgres:
+  ssl-certs:
+  ssl-keys:
