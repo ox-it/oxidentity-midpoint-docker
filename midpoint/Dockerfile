@@ -14,6 +14,8 @@ RUN mkdir -p ${MP_DIR}/var \
 COPY config.xml ${MP_DIR}/var/config.xml
 
 RUN keytool -genseckey -alias strong -keystore /opt/midpoint/var/keystore.jceks -storetype jceks -storepass changeit -keyalg AES -keysize 256 -keypass midpoint
+RUN mkdir -p ${MP_DIR}/var/schema
+ADD idm-schema.xml ${MP_DIR}/var/schema/
 
 EXPOSE 8080
 
