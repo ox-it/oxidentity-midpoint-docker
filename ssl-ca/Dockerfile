@@ -4,9 +4,7 @@ MAINTAINER robert.bradley@it.ox.ac.uk
 ENV KRB5_REALM=TEST.OX.AC.UK
 ENV KRB5_LC_REALM=test.ox.ac.uk
 
-RUN mkdir -p /etc/krb5
-RUN mkdir -p /var/lib/ssl-ca/certs
-RUN mkdir -p /var/lib/ssl-ca/keys
+RUN mkdir -p /etc/krb5 /var/lib/ssl-ca/certs /var/lib/ssl-ca/keys
 VOLUME ["/etc/krb5"]
 
 RUN apt-get update && apt-get install -y openssl sysdev-utils
