@@ -1,4 +1,4 @@
-FROM sysdev:stretch
+FROM debian:9
 MAINTAINER robert.bradley@it.ox.ac.uk
 #ARG DEBIAN_FRONTEND=noninteractive
 ENV KRB5_REALM=TEST.OX.AC.UK
@@ -7,7 +7,7 @@ ENV KRB5_LC_REALM=test.ox.ac.uk
 RUN mkdir -p /etc/krb5 /var/lib/ssl-ca/certs /var/lib/ssl-ca/keys
 VOLUME ["/etc/krb5"]
 
-RUN apt-get update && apt-get install -y openssl sysdev-utils
+RUN apt-get update && apt-get install -y openssl
 
 COPY req /usr/bin/req
 COPY gen-cert.sh /usr/bin/gen-cert.sh

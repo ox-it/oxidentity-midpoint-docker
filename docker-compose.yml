@@ -27,8 +27,6 @@ services:
       - iam
   ssl-ca:
     build: ssl-ca/
-    image: ssl-ca
-    container_name: ssl-ca
     volumes:
       - ssl-certs:/var/lib/ssl-ca/certs
       - ssl-keys:/var/lib/ssl-ca/keys
