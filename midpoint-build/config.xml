@@ -1,0 +1,21 @@
+<configuration>
+    <midpoint>
+        <repository>
+            <repositoryServiceFactoryClass>com.evolveum.midpoint.repo.sql.SqlRepositoryFactory</repositoryServiceFactoryClass>
+            <database>postgresql</database>
+            <jdbcUsername>midpoint</jdbcUsername>
+            <jdbcPassword>midpoint</jdbcPassword>
+            <jdbcUrl>jdbc:postgresql://midpoint-db/midpoint</jdbcUrl>
+        </repository>
+        <keystore>
+            <keyStorePath>${midpoint.home}/keystore.jceks</keyStorePath>
+            <keyStorePassword>changeit</keyStorePassword>
+            <encryptionKeyAlias>strong</encryptionKeyAlias>
+            <xmlCipher>http://www.w3.org/2001/04/xmlenc#aes256-cbc</xmlCipher>
+        </keystore>
+        <icf>
+            <scanClasspath>true</scanClasspath>
+            <scanDirectory>${midpoint.home}/icf-connectors</scanDirectory>
+	    </icf>
+    </midpoint>
+</configuration>
