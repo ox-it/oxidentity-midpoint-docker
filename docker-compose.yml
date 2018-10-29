@@ -16,7 +16,7 @@ services:
   midpoint:
     depends_on:
       - midpoint-db
-    build: midpoint/
+    build: midpoint-build/
     image: midpoint
     container_name: midpoint
     domainname: midpoint
