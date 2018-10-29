@@ -1,6 +1,7 @@
 FROM debian:9 AS build
 
-ENV MP_BRANCH=v3.8
+#ENV MP_BRANCH=v3.8
+ARG MP_BRANCH
 
 RUN apt-get update && \
   apt-get dist-upgrade -y && \

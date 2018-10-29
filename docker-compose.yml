@@ -16,7 +16,10 @@ services:
   midpoint:
     depends_on:
       - midpoint-db
-    build: midpoint-build/
+    build:
+      context: midpoint-build/
+      args:
+        MP_BRANCH: v3.8
     image: midpoint
     container_name: midpoint
     domainname: midpoint
