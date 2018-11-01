@@ -1,7 +1,8 @@
 version: '2'
 services:
   midpoint-db:
-    image: postgres:9.6
+    build: midpoint-db/
+    image: midpoint-db
     container_name: midpoint-db
     domainname: midpoint
     hostname: midpoint-db
