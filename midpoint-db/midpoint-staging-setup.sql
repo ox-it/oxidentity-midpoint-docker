@@ -1,5 +1,6 @@
+CREATE DATABASE midpoint_staging WITH OWNER midpoint;
+\c midpoint_staging;
 BEGIN;
-	CREATE DATABASE midpoint_staging WITH OWNER midpoint;
 	CREATE TABLE hris (
 		employeeeId VARCHAR PRIMARY KEY,
 		firstName VARCHAR,
