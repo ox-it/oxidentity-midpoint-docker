@@ -4,6 +4,7 @@ CREATE TABLE m_acc_cert_campaign (
   definitionRef_type      INT4,
   endTimestamp            TIMESTAMP,
   handlerUri              VARCHAR(255),
+  iteration               INT4        NOT NULL,
   name_norm               VARCHAR(255),
   name_orig               VARCHAR(255),
   ownerRef_relation       VARCHAR(157),
@@ -30,6 +31,7 @@ CREATE TABLE m_acc_cert_case (
   validityStatus           INT4,
   currentStageOutcome      VARCHAR(255),
   fullObject               BYTEA,
+  iteration                INT4        NOT NULL,
   objectRef_relation       VARCHAR(157),
   objectRef_targetOid      VARCHAR(36),
   objectRef_type           INT4,
@@ -66,6 +68,7 @@ CREATE TABLE m_acc_cert_wi (
   owner_id               INT4        NOT NULL,
   owner_owner_oid        VARCHAR(36) NOT NULL,
   closeTimestamp         TIMESTAMP,
+  iteration              INT4        NOT NULL,
   outcome                VARCHAR(255),
   outputChangeTimestamp  TIMESTAMP,
   performerRef_relation  VARCHAR(157),
@@ -589,6 +592,11 @@ CREATE TABLE m_generic_object (
   oid        VARCHAR(36) NOT NULL,
   PRIMARY KEY (oid)
 );
+CREATE TABLE m_global_metadata (
+  name  VARCHAR(255) NOT NULL,
+  value VARCHAR(255),
+  PRIMARY KEY (name)
+);
 CREATE TABLE m_lookup_table (
   name_norm VARCHAR(255),
   name_orig VARCHAR(255),
@@ -610,6 +618,12 @@ CREATE TABLE m_node (
   name_orig      VARCHAR(255),
   nodeIdentifier VARCHAR(255),
   oid            VARCHAR(36) NOT NULL,
+  PRIMARY KEY (oid)
+);
+CREATE TABLE m_object_collection (
+  name_norm VARCHAR(255),
+  name_orig VARCHAR(255),
+  oid       VARCHAR(36) NOT NULL,
   PRIMARY KEY (oid)
 );
 CREATE TABLE m_object_template (
@@ -916,6 +930,10 @@ CREATE INDEX iNodeNameOrig
   ON m_node (name_orig);
 ALTER TABLE IF EXISTS m_node
   ADD CONSTRAINT uc_node_name UNIQUE (name_norm);
+CREATE INDEX iObjectCollectionNameOrig
+  ON m_object_collection (name_orig);
+ALTER TABLE IF EXISTS m_object_collection
+  ADD CONSTRAINT uc_object_collection_name UNIQUE (name_norm);
 CREATE INDEX iObjectTemplateNameOrig
   ON m_object_template (name_orig);
 ALTER TABLE IF EXISTS m_object_template
@@ -1110,6 +1128,8 @@ ALTER TABLE IF EXISTS m_lookup_table_row
   ADD CONSTRAINT fk_lookup_table_owner FOREIGN KEY (owner_oid) REFERENCES m_lookup_table;
 ALTER TABLE IF EXISTS m_node
   ADD CONSTRAINT fk_node FOREIGN KEY (oid) REFERENCES m_object;
+ALTER TABLE IF EXISTS m_object_collection
+  ADD CONSTRAINT fk_object_collection FOREIGN KEY (oid) REFERENCES m_object;
 ALTER TABLE IF EXISTS m_object_template
   ADD CONSTRAINT fk_object_template FOREIGN KEY (oid) REFERENCES m_object;
 ALTER TABLE IF EXISTS m_org
@@ -1136,6 +1156,8 @@ ALTER TABLE IF EXISTS m_user
   ADD CONSTRAINT fk_user FOREIGN KEY (oid) REFERENCES m_focus;
 ALTER TABLE IF EXISTS m_value_policy
   ADD CONSTRAINT fk_value_policy FOREIGN KEY (oid) REFERENCES m_object;
+
+INSERT INTO m_global_metadata VALUES ('databaseSchemaVersion', '3.9');
 
 -- Thanks to Patrick Lightbody for submitting this...
 --
