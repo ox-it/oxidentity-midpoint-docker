@@ -20,7 +20,7 @@ services:
     build:
       context: midpoint-build/
       args:
-        MP_BRANCH: v3.9
+        MP_BRANCH: v4.0
     image: midpoint
     container_name: midpoint
     domainname: midpoint

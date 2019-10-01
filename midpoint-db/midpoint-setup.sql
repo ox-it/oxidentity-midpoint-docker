@@ -176,12 +176,6 @@ CREATE TABLE m_assignment_ext_string (
 CREATE TABLE m_assignment_extension (
   owner_id        INT4        NOT NULL,
   owner_owner_oid VARCHAR(36) NOT NULL,
-  booleansCount   INT2,
-  datesCount      INT2,
-  longsCount      INT2,
-  polysCount      INT2,
-  referencesCount INT2,
-  stringsCount    INT2,
   PRIMARY KEY (owner_owner_oid, owner_id)
 );
 CREATE TABLE m_assignment_policy_situation (
@@ -230,6 +224,7 @@ CREATE TABLE m_audit_event (
   outcome           INT4,
   parameter         VARCHAR(255),
   remoteHostAddress VARCHAR(255),
+  requestIdentifier VARCHAR(255),
   result            VARCHAR(255),
   sessionIdentifier VARCHAR(255),
   targetName        VARCHAR(255),
@@ -244,7 +239,7 @@ CREATE TABLE m_audit_event (
   PRIMARY KEY (id)
 );
 CREATE TABLE m_audit_item (
-  changedItemPath VARCHAR(255) NOT NULL,
+  changedItemPath VARCHAR(900) NOT NULL,
   record_id       INT8         NOT NULL,
   PRIMARY KEY (record_id, changedItemPath)
 );
@@ -265,10 +260,16 @@ CREATE TABLE m_audit_ref_value (
   type            VARCHAR(255),
   PRIMARY KEY (id)
 );
+CREATE TABLE m_audit_resource (
+  resourceOid 	  VARCHAR(255) NOT NULL,
+  record_id       INT8         NOT NULL,
+  PRIMARY KEY (record_id, resourceOid)
+);
 CREATE TABLE m_case_wi (
   id                            INT4        NOT NULL,
   owner_oid                     VARCHAR(36) NOT NULL,
   closeTimestamp                TIMESTAMP,
+  createTimestamp               TIMESTAMP,
   deadline                      TIMESTAMP,
   originalAssigneeRef_relation  VARCHAR(157),
   originalAssigneeRef_targetOid VARCHAR(36),
@@ -283,10 +284,11 @@ CREATE TABLE m_case_wi (
 CREATE TABLE m_case_wi_reference (
   owner_id        INT4         NOT NULL,
   owner_owner_oid VARCHAR(36)  NOT NULL,
+  reference_type  INT4         NOT NULL,
   relation        VARCHAR(157) NOT NULL,
   targetOid       VARCHAR(36)  NOT NULL,
   targetType      INT4,
-  PRIMARY KEY (owner_owner_oid, owner_id, targetOid, relation)
+  PRIMARY KEY (owner_owner_oid, owner_id, reference_type, targetOid, relation)
 );
 CREATE TABLE m_connector_target_system (
   connector_oid    VARCHAR(36) NOT NULL,
@@ -310,16 +312,13 @@ CREATE TABLE m_focus_policy_situation (
 );
 CREATE TABLE m_object (
   oid                   VARCHAR(36) NOT NULL,
-  booleansCount         INT2,
   createChannel         VARCHAR(255),
   createTimestamp       TIMESTAMP,
   creatorRef_relation   VARCHAR(157),
   creatorRef_targetOid  VARCHAR(36),
   creatorRef_type       INT4,
-  datesCount            INT2,
   fullObject            BYTEA,
   lifecycleState        VARCHAR(255),
-  longsCount            INT2,
   modifierRef_relation  VARCHAR(157),
   modifierRef_targetOid VARCHAR(36),
   modifierRef_type      INT4,
@@ -328,9 +327,6 @@ CREATE TABLE m_object (
   name_norm             VARCHAR(255),
   name_orig             VARCHAR(255),
   objectTypeClass       INT4,
-  polysCount            INT2,
-  referencesCount       INT2,
-  stringsCount          INT2,
   tenantRef_relation    VARCHAR(157),
   tenantRef_targetOid   VARCHAR(36),
   tenantRef_type        INT4,
@@ -438,6 +434,7 @@ CREATE TABLE m_shadow (
   name_orig                    VARCHAR(255),
   objectClass                  VARCHAR(157),
   pendingOperationCount        INT4,
+  primaryIdentifierValue       VARCHAR(255),
   resourceRef_relation         VARCHAR(157),
   resourceRef_targetOid        VARCHAR(36),
   resourceRef_type             INT4,
@@ -449,7 +446,6 @@ CREATE TABLE m_shadow (
 );
 CREATE TABLE m_task (
   binding                  INT4,
-  canRunOnNode             VARCHAR(255),
   category                 VARCHAR(255),
   completionTimestamp      TIMESTAMP,
   executionStatus          INT4,
@@ -472,18 +468,6 @@ CREATE TABLE m_task (
   taskIdentifier           VARCHAR(255),
   threadStopAction         INT4,
   waitingReason            INT4,
-  wfEndTimestamp           TIMESTAMP,
-  wfObjectRef_relation     VARCHAR(157),
-  wfObjectRef_targetOid    VARCHAR(36),
-  wfObjectRef_type         INT4,
-  wfProcessInstanceId      VARCHAR(255),
-  wfRequesterRef_relation  VARCHAR(157),
-  wfRequesterRef_targetOid VARCHAR(36),
-  wfRequesterRef_type      INT4,
-  wfStartTimestamp         TIMESTAMP,
-  wfTargetRef_relation     VARCHAR(157),
-  wfTargetRef_targetOid    VARCHAR(36),
-  wfTargetRef_type         INT4,
   oid                      VARCHAR(36) NOT NULL,
   PRIMARY KEY (oid)
 );
@@ -519,14 +503,30 @@ CREATE TABLE m_abstract_role (
   oid                VARCHAR(36) NOT NULL,
   PRIMARY KEY (oid)
 );
+CREATE TABLE m_archetype (
+  name_norm VARCHAR(255),
+  name_orig VARCHAR(255),
+  oid       VARCHAR(36) NOT NULL,
+  PRIMARY KEY (oid)
+);
 CREATE TABLE m_case (
-  name_norm           VARCHAR(255),
-  name_orig           VARCHAR(255),
-  objectRef_relation  VARCHAR(157),
-  objectRef_targetOid VARCHAR(36),
-  objectRef_type      INT4,
-  state               VARCHAR(255),
-  oid                 VARCHAR(36) NOT NULL,
+  closeTimestamp         TIMESTAMP,
+  name_norm              VARCHAR(255),
+  name_orig              VARCHAR(255),
+  objectRef_relation     VARCHAR(157),
+  objectRef_targetOid    VARCHAR(36),
+  objectRef_type         INT4,
+  parentRef_relation     VARCHAR(157),
+  parentRef_targetOid    VARCHAR(36),
+  parentRef_type         INT4,
+  requestorRef_relation  VARCHAR(157),
+  requestorRef_targetOid VARCHAR(36),
+  requestorRef_type      INT4,
+  state                  VARCHAR(255),
+  targetRef_relation     VARCHAR(157),
+  targetRef_targetOid    VARCHAR(36),
+  targetRef_type         INT4,
+  oid                    VARCHAR(36) NOT NULL,
   PRIMARY KEY (oid)
 );
 CREATE TABLE m_connector (
@@ -549,6 +549,12 @@ CREATE TABLE m_connector_host (
   port      VARCHAR(255),
   oid       VARCHAR(36) NOT NULL,
   PRIMARY KEY (oid)
+);
+CREATE TABLE m_dashboard (
+    name_norm VARCHAR(255),
+    name_orig VARCHAR(255),
+    oid       VARCHAR(36) NOT NULL,
+    PRIMARY KEY (oid)
 );
 CREATE TABLE m_focus (
   administrativeStatus    INT4,
@@ -799,6 +805,10 @@ CREATE INDEX iAuditPropValRecordId
   ON m_audit_prop_value (record_id);
 CREATE INDEX iAuditRefValRecordId
   ON m_audit_ref_value (record_id);
+CREATE INDEX iAuditResourceOid
+  ON m_audit_resource (resourceOid);
+CREATE INDEX iAuditResourceOidRecordId
+  ON m_audit_resource (record_id);
 CREATE INDEX iCaseWorkItemRefTargetOid
   ON m_case_wi_reference (targetOid);
 
@@ -862,20 +872,11 @@ CREATE INDEX iShadowNameOrig
   ON m_shadow (name_orig);
 CREATE INDEX iShadowNameNorm
   ON m_shadow (name_norm);
+ALTER TABLE IF EXISTS m_shadow
+    ADD CONSTRAINT iPrimaryIdentifierValueWithOC UNIQUE (primaryIdentifierValue, objectClass, resourceRef_targetOid);
 CREATE INDEX iParent
   ON m_task (parent);
-CREATE INDEX iTaskWfProcessInstanceId
-  ON m_task (wfProcessInstanceId);
-CREATE INDEX iTaskWfStartTimestamp
-  ON m_task (wfStartTimestamp);
-CREATE INDEX iTaskWfEndTimestamp
-  ON m_task (wfEndTimestamp);
-CREATE INDEX iTaskWfRequesterOid
-  ON m_task (wfRequesterRef_targetOid);
-CREATE INDEX iTaskWfObjectOid
-  ON m_task (wfObjectRef_targetOid);
-CREATE INDEX iTaskWfTargetOid
-  ON m_task (wfTargetRef_targetOid);
+CREATE INDEX iTaskObjectOid ON m_task(objectRef_targetOid);
 CREATE INDEX iTaskNameOrig
   ON m_task (name_orig);
 ALTER TABLE IF EXISTS m_task
@@ -884,12 +885,16 @@ CREATE INDEX iAbstractRoleIdentifier
   ON m_abstract_role (identifier);
 CREATE INDEX iRequestable
   ON m_abstract_role (requestable);
-CREATE INDEX iAutoassignEnabled
-  ON m_abstract_role (autoassign_enabled);
+CREATE INDEX iAutoassignEnabled ON m_abstract_role(autoassign_enabled);
+CREATE INDEX iArchetypeNameOrig ON m_archetype(name_orig);
+CREATE INDEX iArchetypeNameNorm ON m_archetype(name_norm);
 CREATE INDEX iCaseNameOrig
   ON m_case (name_orig);
-ALTER TABLE IF EXISTS m_case
-  ADD CONSTRAINT uc_case_name UNIQUE (name_norm);
+CREATE INDEX iCaseTypeObjectRefTargetOid ON m_case(objectRef_targetOid);
+CREATE INDEX iCaseTypeTargetRefTargetOid ON m_case(targetRef_targetOid);
+CREATE INDEX iCaseTypeParentRefTargetOid ON m_case(parentRef_targetOid);
+CREATE INDEX iCaseTypeRequestorRefTargetOid ON m_case(requestorRef_targetOid);
+CREATE INDEX iCaseTypeCloseTimestamp ON m_case(closeTimestamp);
 CREATE INDEX iConnectorNameOrig
   ON m_connector (name_orig);
 CREATE INDEX iConnectorNameNorm
@@ -898,6 +903,9 @@ CREATE INDEX iConnectorHostNameOrig
   ON m_connector_host (name_orig);
 ALTER TABLE IF EXISTS m_connector_host
   ADD CONSTRAINT uc_connector_host_name UNIQUE (name_norm);
+CREATE INDEX iDashboardNameOrig ON m_dashboard(name_orig);
+ALTER TABLE IF EXISTS m_dashboard
+    ADD CONSTRAINT u_dashboard_name UNIQUE (name_norm);
 CREATE INDEX iFocusAdministrative
   ON m_focus (administrativeStatus);
 CREATE INDEX iFocusEffective
@@ -1010,32 +1018,35 @@ ALTER TABLE IF EXISTS m_assignment
   ADD CONSTRAINT fk_assignment_owner FOREIGN KEY (owner_oid) REFERENCES m_object;
 ALTER TABLE IF EXISTS m_assignment_ext_boolean
   ADD CONSTRAINT fk_a_ext_boolean_owner FOREIGN KEY (anyContainer_owner_owner_oid, anyContainer_owner_id) REFERENCES m_assignment_extension;
-ALTER TABLE IF EXISTS m_assignment_ext_boolean
-  ADD CONSTRAINT fk_a_ext_boolean_item FOREIGN KEY (item_id) REFERENCES m_ext_item;
 ALTER TABLE IF EXISTS m_assignment_ext_date
   ADD CONSTRAINT fk_a_ext_date_owner FOREIGN KEY (anyContainer_owner_owner_oid, anyContainer_owner_id) REFERENCES m_assignment_extension;
-ALTER TABLE IF EXISTS m_assignment_ext_date
-  ADD CONSTRAINT fk_a_ext_date_item FOREIGN KEY (item_id) REFERENCES m_ext_item;
 ALTER TABLE IF EXISTS m_assignment_ext_long
   ADD CONSTRAINT fk_a_ext_long_owner FOREIGN KEY (anyContainer_owner_owner_oid, anyContainer_owner_id) REFERENCES m_assignment_extension;
-ALTER TABLE IF EXISTS m_assignment_ext_long
-  ADD CONSTRAINT fk_a_ext_long_item FOREIGN KEY (item_id) REFERENCES m_ext_item;
 ALTER TABLE IF EXISTS m_assignment_ext_poly
   ADD CONSTRAINT fk_a_ext_poly_owner FOREIGN KEY (anyContainer_owner_owner_oid, anyContainer_owner_id) REFERENCES m_assignment_extension;
-ALTER TABLE IF EXISTS m_assignment_ext_poly
-  ADD CONSTRAINT fk_a_ext_poly_item FOREIGN KEY (item_id) REFERENCES m_ext_item;
 ALTER TABLE IF EXISTS m_assignment_ext_reference
   ADD CONSTRAINT fk_a_ext_reference_owner FOREIGN KEY (anyContainer_owner_owner_oid, anyContainer_owner_id) REFERENCES m_assignment_extension;
-ALTER TABLE IF EXISTS m_assignment_ext_reference
-  ADD CONSTRAINT fk_a_ext_boolean_reference FOREIGN KEY (item_id) REFERENCES m_ext_item;
 ALTER TABLE IF EXISTS m_assignment_ext_string
   ADD CONSTRAINT fk_a_ext_string_owner FOREIGN KEY (anyContainer_owner_owner_oid, anyContainer_owner_id) REFERENCES m_assignment_extension;
-ALTER TABLE IF EXISTS m_assignment_ext_string
-  ADD CONSTRAINT fk_a_ext_string_item FOREIGN KEY (item_id) REFERENCES m_ext_item;
 ALTER TABLE IF EXISTS m_assignment_policy_situation
   ADD CONSTRAINT fk_assignment_policy_situation FOREIGN KEY (assignment_oid, assignment_id) REFERENCES m_assignment;
 ALTER TABLE IF EXISTS m_assignment_reference
   ADD CONSTRAINT fk_assignment_reference FOREIGN KEY (owner_owner_oid, owner_id) REFERENCES m_assignment;
+
+-- These are created manually
+ALTER TABLE IF EXISTS m_assignment_ext_boolean
+  ADD CONSTRAINT fk_a_ext_boolean_item FOREIGN KEY (item_id) REFERENCES m_ext_item;
+ALTER TABLE IF EXISTS m_assignment_ext_date
+  ADD CONSTRAINT fk_a_ext_date_item FOREIGN KEY (item_id) REFERENCES m_ext_item;
+ALTER TABLE IF EXISTS m_assignment_ext_long
+  ADD CONSTRAINT fk_a_ext_long_item FOREIGN KEY (item_id) REFERENCES m_ext_item;
+ALTER TABLE IF EXISTS m_assignment_ext_poly
+  ADD CONSTRAINT fk_a_ext_poly_item FOREIGN KEY (item_id) REFERENCES m_ext_item;
+ALTER TABLE IF EXISTS m_assignment_ext_reference
+  ADD CONSTRAINT fk_a_ext_reference_item FOREIGN KEY (item_id) REFERENCES m_ext_item;
+ALTER TABLE IF EXISTS m_assignment_ext_string
+  ADD CONSTRAINT fk_a_ext_string_item FOREIGN KEY (item_id) REFERENCES m_ext_item;
+
 ALTER TABLE IF EXISTS m_audit_delta
   ADD CONSTRAINT fk_audit_delta FOREIGN KEY (record_id) REFERENCES m_audit_event;
 ALTER TABLE IF EXISTS m_audit_item
@@ -1044,6 +1055,8 @@ ALTER TABLE IF EXISTS m_audit_prop_value
   ADD CONSTRAINT fk_audit_prop_value FOREIGN KEY (record_id) REFERENCES m_audit_event;
 ALTER TABLE IF EXISTS m_audit_ref_value
   ADD CONSTRAINT fk_audit_ref_value FOREIGN KEY (record_id) REFERENCES m_audit_event;
+ALTER TABLE IF EXISTS m_audit_resource
+  ADD CONSTRAINT fk_audit_resource FOREIGN KEY (record_id) REFERENCES m_audit_event;
 ALTER TABLE IF EXISTS m_case_wi
   ADD CONSTRAINT fk_case_wi_owner FOREIGN KEY (owner_oid) REFERENCES m_case;
 ALTER TABLE IF EXISTS m_case_wi_reference
@@ -1056,28 +1069,31 @@ ALTER TABLE IF EXISTS m_focus_policy_situation
   ADD CONSTRAINT fk_focus_policy_situation FOREIGN KEY (focus_oid) REFERENCES m_focus;
 ALTER TABLE IF EXISTS m_object_ext_boolean
   ADD CONSTRAINT fk_o_ext_boolean_owner FOREIGN KEY (owner_oid) REFERENCES m_object;
+ALTER TABLE IF EXISTS m_object_ext_date
+  ADD CONSTRAINT fk_o_ext_date_owner FOREIGN KEY (owner_oid) REFERENCES m_object;
+ALTER TABLE IF EXISTS m_object_ext_long
+  ADD CONSTRAINT fk_object_ext_long FOREIGN KEY (owner_oid) REFERENCES m_object;
+ALTER TABLE IF EXISTS m_object_ext_poly
+  ADD CONSTRAINT fk_o_ext_poly_owner FOREIGN KEY (owner_oid) REFERENCES m_object;
+ALTER TABLE IF EXISTS m_object_ext_reference
+  ADD CONSTRAINT fk_o_ext_reference_owner FOREIGN KEY (owner_oid) REFERENCES m_object;
+ALTER TABLE IF EXISTS m_object_ext_string
+  ADD CONSTRAINT fk_object_ext_string FOREIGN KEY (owner_oid) REFERENCES m_object;
+
+-- These are created manually
 ALTER TABLE IF EXISTS m_object_ext_boolean
   ADD CONSTRAINT fk_o_ext_boolean_item FOREIGN KEY (item_id) REFERENCES m_ext_item;
 ALTER TABLE IF EXISTS m_object_ext_date
-  ADD CONSTRAINT fk_o_ext_date_owner FOREIGN KEY (owner_oid) REFERENCES m_object;
-ALTER TABLE IF EXISTS m_object_ext_date
   ADD CONSTRAINT fk_o_ext_date_item FOREIGN KEY (item_id) REFERENCES m_ext_item;
-ALTER TABLE IF EXISTS m_object_ext_long
-  ADD CONSTRAINT fk_object_ext_long FOREIGN KEY (owner_oid) REFERENCES m_object;
 ALTER TABLE IF EXISTS m_object_ext_long
   ADD CONSTRAINT fk_o_ext_long_item FOREIGN KEY (item_id) REFERENCES m_ext_item;
 ALTER TABLE IF EXISTS m_object_ext_poly
-  ADD CONSTRAINT fk_o_ext_poly_owner FOREIGN KEY (owner_oid) REFERENCES m_object;
-ALTER TABLE IF EXISTS m_object_ext_poly
   ADD CONSTRAINT fk_o_ext_poly_item FOREIGN KEY (item_id) REFERENCES m_ext_item;
-ALTER TABLE IF EXISTS m_object_ext_reference
-  ADD CONSTRAINT fk_o_ext_reference_owner FOREIGN KEY (owner_oid) REFERENCES m_object;
 ALTER TABLE IF EXISTS m_object_ext_reference
   ADD CONSTRAINT fk_o_ext_reference_item FOREIGN KEY (item_id) REFERENCES m_ext_item;
 ALTER TABLE IF EXISTS m_object_ext_string
-  ADD CONSTRAINT fk_object_ext_string FOREIGN KEY (owner_oid) REFERENCES m_object;
-ALTER TABLE IF EXISTS m_object_ext_string
   ADD CONSTRAINT fk_o_ext_string_item FOREIGN KEY (item_id) REFERENCES m_ext_item;
+
 ALTER TABLE IF EXISTS m_object_subtype
   ADD CONSTRAINT fk_object_subtype FOREIGN KEY (object_oid) REFERENCES m_object;
 ALTER TABLE IF EXISTS m_object_text_info
@@ -1108,12 +1124,16 @@ ALTER TABLE IF EXISTS m_user_organizational_unit
   ADD CONSTRAINT fk_user_org_unit FOREIGN KEY (user_oid) REFERENCES m_user;
 ALTER TABLE IF EXISTS m_abstract_role
   ADD CONSTRAINT fk_abstract_role FOREIGN KEY (oid) REFERENCES m_focus;
+ALTER TABLE IF EXISTS m_archetype
+  ADD CONSTRAINT fk_archetype FOREIGN KEY (oid) REFERENCES m_abstract_role;
 ALTER TABLE IF EXISTS m_case
   ADD CONSTRAINT fk_case FOREIGN KEY (oid) REFERENCES m_object;
 ALTER TABLE IF EXISTS m_connector
   ADD CONSTRAINT fk_connector FOREIGN KEY (oid) REFERENCES m_object;
 ALTER TABLE IF EXISTS m_connector_host
   ADD CONSTRAINT fk_connector_host FOREIGN KEY (oid) REFERENCES m_object;
+ALTER TABLE IF EXISTS m_dashboard
+  ADD CONSTRAINT fk_dashboard FOREIGN KEY (oid) REFERENCES m_object;
 ALTER TABLE IF EXISTS m_focus
   ADD CONSTRAINT fk_focus FOREIGN KEY (oid) REFERENCES m_object;
 ALTER TABLE IF EXISTS m_form
@@ -1121,7 +1141,7 @@ ALTER TABLE IF EXISTS m_form
 ALTER TABLE IF EXISTS m_function_library
   ADD CONSTRAINT fk_function_library FOREIGN KEY (oid) REFERENCES m_object;
 ALTER TABLE IF EXISTS m_generic_object
-  ADD CONSTRAINT fk_generic_object FOREIGN KEY (oid) REFERENCES m_object;
+  ADD CONSTRAINT fk_generic_object FOREIGN KEY (oid) REFERENCES m_focus;
 ALTER TABLE IF EXISTS m_lookup_table
   ADD CONSTRAINT fk_lookup_table FOREIGN KEY (oid) REFERENCES m_object;
 ALTER TABLE IF EXISTS m_lookup_table_row
@@ -1157,7 +1177,31 @@ ALTER TABLE IF EXISTS m_user
 ALTER TABLE IF EXISTS m_value_policy
   ADD CONSTRAINT fk_value_policy FOREIGN KEY (oid) REFERENCES m_object;
 
-INSERT INTO m_global_metadata VALUES ('databaseSchemaVersion', '3.9');
+-- Indices for foreign keys; maintained manually
+CREATE INDEX iUserEmployeeTypeOid ON M_USER_EMPLOYEE_TYPE(USER_OID);
+CREATE INDEX iUserOrganizationOid ON M_USER_ORGANIZATION(USER_OID);
+CREATE INDEX iUserOrganizationalUnitOid ON M_USER_ORGANIZATIONAL_UNIT(USER_OID);
+CREATE INDEX iAssignmentExtBooleanItemId ON M_ASSIGNMENT_EXT_BOOLEAN(ITEM_ID);
+CREATE INDEX iAssignmentExtDateItemId ON M_ASSIGNMENT_EXT_DATE(ITEM_ID);
+CREATE INDEX iAssignmentExtLongItemId ON M_ASSIGNMENT_EXT_LONG(ITEM_ID);
+CREATE INDEX iAssignmentExtPolyItemId ON M_ASSIGNMENT_EXT_POLY(ITEM_ID);
+CREATE INDEX iAssignmentExtReferenceItemId ON M_ASSIGNMENT_EXT_REFERENCE(ITEM_ID);
+CREATE INDEX iAssignmentExtStringItemId ON M_ASSIGNMENT_EXT_STRING(ITEM_ID);
+CREATE INDEX iAssignmentPolicySituationId ON M_ASSIGNMENT_POLICY_SITUATION(ASSIGNMENT_OID, ASSIGNMENT_ID);
+CREATE INDEX iConnectorTargetSystemOid ON M_CONNECTOR_TARGET_SYSTEM(CONNECTOR_OID);
+CREATE INDEX iFocusPolicySituationOid ON M_FOCUS_POLICY_SITUATION(FOCUS_OID);
+CREATE INDEX iObjectExtBooleanItemId ON M_OBJECT_EXT_BOOLEAN(ITEM_ID);
+CREATE INDEX iObjectExtDateItemId ON M_OBJECT_EXT_DATE(ITEM_ID);
+CREATE INDEX iObjectExtLongItemId ON M_OBJECT_EXT_LONG(ITEM_ID);
+CREATE INDEX iObjectExtPolyItemId ON M_OBJECT_EXT_POLY(ITEM_ID);
+CREATE INDEX iObjectExtReferenceItemId ON M_OBJECT_EXT_REFERENCE(ITEM_ID);
+CREATE INDEX iObjectExtStringItemId ON M_OBJECT_EXT_STRING(ITEM_ID);
+CREATE INDEX iObjectSubtypeOid ON M_OBJECT_SUBTYPE(OBJECT_OID);
+CREATE INDEX iOrgOrgTypeOid ON M_ORG_ORG_TYPE(ORG_OID);
+CREATE INDEX iServiceTypeOid ON M_SERVICE_TYPE(SERVICE_OID);
+CREATE INDEX iTaskDependentOid ON M_TASK_DEPENDENT(TASK_OID);
+
+INSERT INTO m_global_metadata VALUES ('databaseSchemaVersion', '4.0');
 
 -- Thanks to Patrick Lightbody for submitting this...
 --
@@ -1345,552 +1389,5 @@ create index idx_qrtz_ft_j_g on qrtz_fired_triggers(SCHED_NAME,JOB_NAME,JOB_GROU
 create index idx_qrtz_ft_jg on qrtz_fired_triggers(SCHED_NAME,JOB_GROUP);
 create index idx_qrtz_ft_t_g on qrtz_fired_triggers(SCHED_NAME,TRIGGER_NAME,TRIGGER_GROUP);
 create index idx_qrtz_ft_tg on qrtz_fired_triggers(SCHED_NAME,TRIGGER_GROUP);
-
-create table ACT_GE_PROPERTY (
-    NAME_ varchar(64),
-    VALUE_ varchar(300),
-    REV_ integer,
-    primary key (NAME_)
-);
-
-insert into ACT_GE_PROPERTY
-values ('schema.version', '5.22.0.0', 1);
-
-insert into ACT_GE_PROPERTY
-values ('schema.history', 'create(5.22.0.0)', 1);
-
-insert into ACT_GE_PROPERTY
-values ('next.dbid', '1', 1);
-
-create table ACT_GE_BYTEARRAY (
-    ID_ varchar(64),
-    REV_ integer,
-    NAME_ varchar(255),
-    DEPLOYMENT_ID_ varchar(64),
-    BYTES_ bytea,
-    GENERATED_ boolean,
-    primary key (ID_)
-);
-
-create table ACT_RE_DEPLOYMENT (
-    ID_ varchar(64),
-    NAME_ varchar(255),
-    CATEGORY_ varchar(255),
-    TENANT_ID_ varchar(255) default '',
-    DEPLOY_TIME_ timestamp,
-    primary key (ID_)
-);
-
-create table ACT_RE_MODEL (
-    ID_ varchar(64) not null,
-    REV_ integer,
-    NAME_ varchar(255),
-    KEY_ varchar(255),
-    CATEGORY_ varchar(255),
-    CREATE_TIME_ timestamp,
-    LAST_UPDATE_TIME_ timestamp,
-    VERSION_ integer,
-    META_INFO_ varchar(4000),
-    DEPLOYMENT_ID_ varchar(64),
-    EDITOR_SOURCE_VALUE_ID_ varchar(64),
-    EDITOR_SOURCE_EXTRA_VALUE_ID_ varchar(64),
-    TENANT_ID_ varchar(255) default '',
-    primary key (ID_)
-);
-
-create table ACT_RU_EXECUTION (
-    ID_ varchar(64),
-    REV_ integer,
-    PROC_INST_ID_ varchar(64),
-    BUSINESS_KEY_ varchar(255),
-    PARENT_ID_ varchar(64),
-    PROC_DEF_ID_ varchar(64),
-    SUPER_EXEC_ varchar(64),
-    ACT_ID_ varchar(255),
-    IS_ACTIVE_ boolean,
-    IS_CONCURRENT_ boolean,
-    IS_SCOPE_ boolean,
-    IS_EVENT_SCOPE_ boolean,
-    SUSPENSION_STATE_ integer,
-    CACHED_ENT_STATE_ integer,
-    TENANT_ID_ varchar(255) default '',
-    NAME_ varchar(255),
-    LOCK_TIME_ timestamp,
-    primary key (ID_)
-);
-
-create table ACT_RU_JOB (
-    ID_ varchar(64) NOT NULL,
-    REV_ integer,
-    TYPE_ varchar(255) NOT NULL,
-    LOCK_EXP_TIME_ timestamp,
-    LOCK_OWNER_ varchar(255),
-    EXCLUSIVE_ boolean,
-    EXECUTION_ID_ varchar(64),
-    PROCESS_INSTANCE_ID_ varchar(64),
-    PROC_DEF_ID_ varchar(64),
-    RETRIES_ integer,
-    EXCEPTION_STACK_ID_ varchar(64),
-    EXCEPTION_MSG_ varchar(4000),
-    DUEDATE_ timestamp,
-    REPEAT_ varchar(255),
-    HANDLER_TYPE_ varchar(255),
-    HANDLER_CFG_ varchar(4000),
-    TENANT_ID_ varchar(255) default '',
-    primary key (ID_)
-);
-
-create table ACT_RE_PROCDEF (
-    ID_ varchar(64) NOT NULL,
-    REV_ integer,
-    CATEGORY_ varchar(255),
-    NAME_ varchar(255),
-    KEY_ varchar(255) NOT NULL,
-    VERSION_ integer NOT NULL,
-    DEPLOYMENT_ID_ varchar(64),
-    RESOURCE_NAME_ varchar(4000),
-    DGRM_RESOURCE_NAME_ varchar(4000),
-    DESCRIPTION_ varchar(4000),
-    HAS_START_FORM_KEY_ boolean,
-    HAS_GRAPHICAL_NOTATION_ boolean,
-    SUSPENSION_STATE_ integer,
-    TENANT_ID_ varchar(255) default '',
-    primary key (ID_)
-);
-
-create table ACT_RU_TASK (
-    ID_ varchar(64),
-    REV_ integer,
-    EXECUTION_ID_ varchar(64),
-    PROC_INST_ID_ varchar(64),
-    PROC_DEF_ID_ varchar(64),
-    NAME_ varchar(255),
-    PARENT_TASK_ID_ varchar(64),
-    DESCRIPTION_ varchar(4000),
-    TASK_DEF_KEY_ varchar(255),
-    OWNER_ varchar(255),
-    ASSIGNEE_ varchar(255),
-    DELEGATION_ varchar(64),
-    PRIORITY_ integer,
-    CREATE_TIME_ timestamp,
-    DUE_DATE_ timestamp,
-    CATEGORY_ varchar(255),
-    SUSPENSION_STATE_ integer,
-    TENANT_ID_ varchar(255) default '',
-    FORM_KEY_ varchar(255),
-    primary key (ID_)
-);
-
-create table ACT_RU_IDENTITYLINK (
-    ID_ varchar(64),
-    REV_ integer,
-    GROUP_ID_ varchar(255),
-    TYPE_ varchar(255),
-    USER_ID_ varchar(255),
-    TASK_ID_ varchar(64),
-    PROC_INST_ID_ varchar(64),
-    PROC_DEF_ID_ varchar (64),
-    primary key (ID_)
-);
-
-create table ACT_RU_VARIABLE (
-    ID_ varchar(64) not null,
-    REV_ integer,
-    TYPE_ varchar(255) not null,
-    NAME_ varchar(255) not null,
-    EXECUTION_ID_ varchar(64),
-    PROC_INST_ID_ varchar(64),
-    TASK_ID_ varchar(64),
-    BYTEARRAY_ID_ varchar(64),
-    DOUBLE_ double precision,
-    LONG_ bigint,
-    TEXT_ varchar(4000),
-    TEXT2_ varchar(4000),
-    primary key (ID_)
-);
-
-create table ACT_RU_EVENT_SUBSCR (
-    ID_ varchar(64) not null,
-    REV_ integer,
-    EVENT_TYPE_ varchar(255) not null,
-    EVENT_NAME_ varchar(255),
-    EXECUTION_ID_ varchar(64),
-    PROC_INST_ID_ varchar(64),
-    ACTIVITY_ID_ varchar(64),
-    CONFIGURATION_ varchar(255),
-    CREATED_ timestamp not null,
-    PROC_DEF_ID_ varchar(64),
-    TENANT_ID_ varchar(255) default '',
-    primary key (ID_)
-);
-
-create table ACT_EVT_LOG (
-    LOG_NR_ SERIAL PRIMARY KEY,
-    TYPE_ varchar(64),
-    PROC_DEF_ID_ varchar(64),
-    PROC_INST_ID_ varchar(64),
-    EXECUTION_ID_ varchar(64),
-    TASK_ID_ varchar(64),
-    TIME_STAMP_ timestamp not null,
-    USER_ID_ varchar(255),
-    DATA_ bytea,
-    LOCK_OWNER_ varchar(255),
-    LOCK_TIME_ timestamp null,
-    IS_PROCESSED_ smallint default 0
-);
-
-create table ACT_PROCDEF_INFO (
-	ID_ varchar(64) not null,
-    PROC_DEF_ID_ varchar(64) not null,
-    REV_ integer,
-    INFO_JSON_ID_ varchar(64),
-    primary key (ID_)
-);
-
-create index ACT_IDX_EXEC_BUSKEY on ACT_RU_EXECUTION(BUSINESS_KEY_);
-create index ACT_IDX_TASK_CREATE on ACT_RU_TASK(CREATE_TIME_);
-create index ACT_IDX_IDENT_LNK_USER on ACT_RU_IDENTITYLINK(USER_ID_);
-create index ACT_IDX_IDENT_LNK_GROUP on ACT_RU_IDENTITYLINK(GROUP_ID_);
-create index ACT_IDX_EVENT_SUBSCR_CONFIG_ on ACT_RU_EVENT_SUBSCR(CONFIGURATION_);
-create index ACT_IDX_VARIABLE_TASK_ID on ACT_RU_VARIABLE(TASK_ID_);
-
-create index ACT_IDX_BYTEAR_DEPL on ACT_GE_BYTEARRAY(DEPLOYMENT_ID_);
-alter table ACT_GE_BYTEARRAY
-    add constraint ACT_FK_BYTEARR_DEPL
-    foreign key (DEPLOYMENT_ID_)
-    references ACT_RE_DEPLOYMENT (ID_);
-
-alter table ACT_RE_PROCDEF
-    add constraint ACT_UNIQ_PROCDEF
-    unique (KEY_,VERSION_, TENANT_ID_);
-
-create index ACT_IDX_EXE_PROCINST on ACT_RU_EXECUTION(PROC_INST_ID_);
-alter table ACT_RU_EXECUTION
-    add constraint ACT_FK_EXE_PROCINST
-    foreign key (PROC_INST_ID_)
-    references ACT_RU_EXECUTION (ID_);
-
-create index ACT_IDX_EXE_PARENT on ACT_RU_EXECUTION(PARENT_ID_);
-alter table ACT_RU_EXECUTION
-    add constraint ACT_FK_EXE_PARENT
-    foreign key (PARENT_ID_)
-    references ACT_RU_EXECUTION (ID_);
-
-create index ACT_IDX_EXE_SUPER on ACT_RU_EXECUTION(SUPER_EXEC_);
-alter table ACT_RU_EXECUTION
-    add constraint ACT_FK_EXE_SUPER
-    foreign key (SUPER_EXEC_)
-    references ACT_RU_EXECUTION (ID_);
-
-create index ACT_IDX_EXE_PROCDEF on ACT_RU_EXECUTION(PROC_DEF_ID_);
-alter table ACT_RU_EXECUTION
-    add constraint ACT_FK_EXE_PROCDEF
-    foreign key (PROC_DEF_ID_)
-    references ACT_RE_PROCDEF (ID_);
-
-create index ACT_IDX_TSKASS_TASK on ACT_RU_IDENTITYLINK(TASK_ID_);
-alter table ACT_RU_IDENTITYLINK
-    add constraint ACT_FK_TSKASS_TASK
-    foreign key (TASK_ID_)
-    references ACT_RU_TASK (ID_);
-
-create index ACT_IDX_ATHRZ_PROCEDEF on ACT_RU_IDENTITYLINK(PROC_DEF_ID_);
-alter table ACT_RU_IDENTITYLINK
-    add constraint ACT_FK_ATHRZ_PROCEDEF
-    foreign key (PROC_DEF_ID_)
-    references ACT_RE_PROCDEF (ID_);
-
-create index ACT_IDX_IDL_PROCINST on ACT_RU_IDENTITYLINK(PROC_INST_ID_);
-alter table ACT_RU_IDENTITYLINK
-    add constraint ACT_FK_IDL_PROCINST
-    foreign key (PROC_INST_ID_)
-    references ACT_RU_EXECUTION (ID_);
-
-create index ACT_IDX_TASK_EXEC on ACT_RU_TASK(EXECUTION_ID_);
-alter table ACT_RU_TASK
-    add constraint ACT_FK_TASK_EXE
-    foreign key (EXECUTION_ID_)
-    references ACT_RU_EXECUTION (ID_);
-
-create index ACT_IDX_TASK_PROCINST on ACT_RU_TASK(PROC_INST_ID_);
-alter table ACT_RU_TASK
-    add constraint ACT_FK_TASK_PROCINST
-    foreign key (PROC_INST_ID_)
-    references ACT_RU_EXECUTION (ID_);
-
-create index ACT_IDX_TASK_PROCDEF on ACT_RU_TASK(PROC_DEF_ID_);
-alter table ACT_RU_TASK
-  	add constraint ACT_FK_TASK_PROCDEF
-  	foreign key (PROC_DEF_ID_)
-  	references ACT_RE_PROCDEF (ID_);
-
-create index ACT_IDX_VAR_EXE on ACT_RU_VARIABLE(EXECUTION_ID_);
-alter table ACT_RU_VARIABLE
-    add constraint ACT_FK_VAR_EXE
-    foreign key (EXECUTION_ID_)
-    references ACT_RU_EXECUTION (ID_);
-
-create index ACT_IDX_VAR_PROCINST on ACT_RU_VARIABLE(PROC_INST_ID_);
-alter table ACT_RU_VARIABLE
-    add constraint ACT_FK_VAR_PROCINST
-    foreign key (PROC_INST_ID_)
-    references ACT_RU_EXECUTION(ID_);
-
-create index ACT_IDX_VAR_BYTEARRAY on ACT_RU_VARIABLE(BYTEARRAY_ID_);
-alter table ACT_RU_VARIABLE
-    add constraint ACT_FK_VAR_BYTEARRAY
-    foreign key (BYTEARRAY_ID_)
-    references ACT_GE_BYTEARRAY (ID_);
-
-create index ACT_IDX_JOB_EXCEPTION on ACT_RU_JOB(EXCEPTION_STACK_ID_);
-alter table ACT_RU_JOB
-    add constraint ACT_FK_JOB_EXCEPTION
-    foreign key (EXCEPTION_STACK_ID_)
-    references ACT_GE_BYTEARRAY (ID_);
-
-create index ACT_IDX_EVENT_SUBSCR on ACT_RU_EVENT_SUBSCR(EXECUTION_ID_);
-alter table ACT_RU_EVENT_SUBSCR
-    add constraint ACT_FK_EVENT_EXEC
-    foreign key (EXECUTION_ID_)
-    references ACT_RU_EXECUTION(ID_);
-
-create index ACT_IDX_MODEL_SOURCE on ACT_RE_MODEL(EDITOR_SOURCE_VALUE_ID_);
-alter table ACT_RE_MODEL
-    add constraint ACT_FK_MODEL_SOURCE
-    foreign key (EDITOR_SOURCE_VALUE_ID_)
-    references ACT_GE_BYTEARRAY (ID_);
-
-create index ACT_IDX_MODEL_SOURCE_EXTRA on ACT_RE_MODEL(EDITOR_SOURCE_EXTRA_VALUE_ID_);
-alter table ACT_RE_MODEL
-    add constraint ACT_FK_MODEL_SOURCE_EXTRA
-    foreign key (EDITOR_SOURCE_EXTRA_VALUE_ID_)
-    references ACT_GE_BYTEARRAY (ID_);
-
-create index ACT_IDX_MODEL_DEPLOYMENT on ACT_RE_MODEL(DEPLOYMENT_ID_);
-alter table ACT_RE_MODEL
-    add constraint ACT_FK_MODEL_DEPLOYMENT
-    foreign key (DEPLOYMENT_ID_)
-    references ACT_RE_DEPLOYMENT (ID_);
-
-create index ACT_IDX_PROCDEF_INFO_JSON on ACT_PROCDEF_INFO(INFO_JSON_ID_);
-alter table ACT_PROCDEF_INFO
-    add constraint ACT_FK_INFO_JSON_BA
-    foreign key (INFO_JSON_ID_)
-    references ACT_GE_BYTEARRAY (ID_);
-
-create index ACT_IDX_PROCDEF_INFO_PROC on ACT_PROCDEF_INFO(PROC_DEF_ID_);
-alter table ACT_PROCDEF_INFO
-    add constraint ACT_FK_INFO_PROCDEF
-    foreign key (PROC_DEF_ID_)
-    references ACT_RE_PROCDEF (ID_);
-
-alter table ACT_PROCDEF_INFO
-    add constraint ACT_UNIQ_INFO_PROCDEF
-    unique (PROC_DEF_ID_);
-
-create table ACT_HI_PROCINST (
-    ID_ varchar(64) not null,
-    PROC_INST_ID_ varchar(64) not null,
-    BUSINESS_KEY_ varchar(255),
-    PROC_DEF_ID_ varchar(64) not null,
-    START_TIME_ timestamp not null,
-    END_TIME_ timestamp,
-    DURATION_ bigint,
-    START_USER_ID_ varchar(255),
-    START_ACT_ID_ varchar(255),
-    END_ACT_ID_ varchar(255),
-    SUPER_PROCESS_INSTANCE_ID_ varchar(64),
-    DELETE_REASON_ varchar(4000),
-    TENANT_ID_ varchar(255) default '',
-    NAME_ varchar(255),
-    primary key (ID_),
-    unique (PROC_INST_ID_)
-);
-
-create table ACT_HI_ACTINST (
-    ID_ varchar(64) not null,
-    PROC_DEF_ID_ varchar(64) not null,
-    PROC_INST_ID_ varchar(64) not null,
-    EXECUTION_ID_ varchar(64) not null,
-    ACT_ID_ varchar(255) not null,
-    TASK_ID_ varchar(64),
-    CALL_PROC_INST_ID_ varchar(64),
-    ACT_NAME_ varchar(255),
-    ACT_TYPE_ varchar(255) not null,
-    ASSIGNEE_ varchar(255),
-    START_TIME_ timestamp not null,
-    END_TIME_ timestamp,
-    DURATION_ bigint,
-    TENANT_ID_ varchar(255) default '',
-    primary key (ID_)
-);
-
-create table ACT_HI_TASKINST (
-    ID_ varchar(64) not null,
-    PROC_DEF_ID_ varchar(64),
-    TASK_DEF_KEY_ varchar(255),
-    PROC_INST_ID_ varchar(64),
-    EXECUTION_ID_ varchar(64),
-    NAME_ varchar(255),
-    PARENT_TASK_ID_ varchar(64),
-    DESCRIPTION_ varchar(4000),
-    OWNER_ varchar(255),
-    ASSIGNEE_ varchar(255),
-    START_TIME_ timestamp not null,
-    CLAIM_TIME_ timestamp,
-    END_TIME_ timestamp,
-    DURATION_ bigint,
-    DELETE_REASON_ varchar(4000),
-    PRIORITY_ integer,
-    DUE_DATE_ timestamp,
-    FORM_KEY_ varchar(255),
-    CATEGORY_ varchar(255),
-    TENANT_ID_ varchar(255) default '',
-    primary key (ID_)
-);
-
-create table ACT_HI_VARINST (
-    ID_ varchar(64) not null,
-    PROC_INST_ID_ varchar(64),
-    EXECUTION_ID_ varchar(64),
-    TASK_ID_ varchar(64),
-    NAME_ varchar(255) not null,
-    VAR_TYPE_ varchar(100),
-    REV_ integer,
-    BYTEARRAY_ID_ varchar(64),
-    DOUBLE_ double precision,
-    LONG_ bigint,
-    TEXT_ varchar(4000),
-    TEXT2_ varchar(4000),
-    CREATE_TIME_ timestamp,
-    LAST_UPDATED_TIME_ timestamp,
-    primary key (ID_)
-);
-
-create table ACT_HI_DETAIL (
-    ID_ varchar(64) not null,
-    TYPE_ varchar(255) not null,
-    PROC_INST_ID_ varchar(64),
-    EXECUTION_ID_ varchar(64),
-    TASK_ID_ varchar(64),
-    ACT_INST_ID_ varchar(64),
-    NAME_ varchar(255) not null,
-    VAR_TYPE_ varchar(64),
-    REV_ integer,
-    TIME_ timestamp not null,
-    BYTEARRAY_ID_ varchar(64),
-    DOUBLE_ double precision,
-    LONG_ bigint,
-    TEXT_ varchar(4000),
-    TEXT2_ varchar(4000),
-    primary key (ID_)
-);
-
-create table ACT_HI_COMMENT (
-    ID_ varchar(64) not null,
-    TYPE_ varchar(255),
-    TIME_ timestamp not null,
-    USER_ID_ varchar(255),
-    TASK_ID_ varchar(64),
-    PROC_INST_ID_ varchar(64),
-    ACTION_ varchar(255),
-    MESSAGE_ varchar(4000),
-    FULL_MSG_ bytea,
-    primary key (ID_)
-);
-
-create table ACT_HI_ATTACHMENT (
-    ID_ varchar(64) not null,
-    REV_ integer,
-    USER_ID_ varchar(255),
-    NAME_ varchar(255),
-    DESCRIPTION_ varchar(4000),
-    TYPE_ varchar(255),
-    TASK_ID_ varchar(64),
-    PROC_INST_ID_ varchar(64),
-    URL_ varchar(4000),
-    CONTENT_ID_ varchar(64),
-    TIME_ timestamp,
-    primary key (ID_)
-);
-
-create table ACT_HI_IDENTITYLINK (
-    ID_ varchar(64),
-    GROUP_ID_ varchar(255),
-    TYPE_ varchar(255),
-    USER_ID_ varchar(255),
-    TASK_ID_ varchar(64),
-    PROC_INST_ID_ varchar(64),
-    primary key (ID_)
-);
-
-
-create index ACT_IDX_HI_PRO_INST_END on ACT_HI_PROCINST(END_TIME_);
-create index ACT_IDX_HI_PRO_I_BUSKEY on ACT_HI_PROCINST(BUSINESS_KEY_);
-create index ACT_IDX_HI_ACT_INST_START on ACT_HI_ACTINST(START_TIME_);
-create index ACT_IDX_HI_ACT_INST_END on ACT_HI_ACTINST(END_TIME_);
-create index ACT_IDX_HI_DETAIL_PROC_INST on ACT_HI_DETAIL(PROC_INST_ID_);
-create index ACT_IDX_HI_DETAIL_ACT_INST on ACT_HI_DETAIL(ACT_INST_ID_);
-create index ACT_IDX_HI_DETAIL_TIME on ACT_HI_DETAIL(TIME_);
-create index ACT_IDX_HI_DETAIL_NAME on ACT_HI_DETAIL(NAME_);
-create index ACT_IDX_HI_DETAIL_TASK_ID on ACT_HI_DETAIL(TASK_ID_);
-create index ACT_IDX_HI_PROCVAR_PROC_INST on ACT_HI_VARINST(PROC_INST_ID_);
-create index ACT_IDX_HI_PROCVAR_NAME_TYPE on ACT_HI_VARINST(NAME_, VAR_TYPE_);
-create index ACT_IDX_HI_PROCVAR_TASK_ID on ACT_HI_VARINST(TASK_ID_);
-create index ACT_IDX_HI_ACT_INST_PROCINST on ACT_HI_ACTINST(PROC_INST_ID_, ACT_ID_);
-create index ACT_IDX_HI_ACT_INST_EXEC on ACT_HI_ACTINST(EXECUTION_ID_, ACT_ID_);
-create index ACT_IDX_HI_IDENT_LNK_USER on ACT_HI_IDENTITYLINK(USER_ID_);
-create index ACT_IDX_HI_IDENT_LNK_TASK on ACT_HI_IDENTITYLINK(TASK_ID_);
-create index ACT_IDX_HI_IDENT_LNK_PROCINST on ACT_HI_IDENTITYLINK(PROC_INST_ID_);
-create index ACT_IDX_HI_TASK_INST_PROCINST on ACT_HI_TASKINST(PROC_INST_ID_);
-
-create table ACT_ID_GROUP (
-    ID_ varchar(64),
-    REV_ integer,
-    NAME_ varchar(255),
-    TYPE_ varchar(255),
-    primary key (ID_)
-);
-
-create table ACT_ID_MEMBERSHIP (
-    USER_ID_ varchar(64),
-    GROUP_ID_ varchar(64),
-    primary key (USER_ID_, GROUP_ID_)
-);
-
-create table ACT_ID_USER (
-    ID_ varchar(64),
-    REV_ integer,
-    FIRST_ varchar(255),
-    LAST_ varchar(255),
-    EMAIL_ varchar(255),
-    PWD_ varchar(255),
-    PICTURE_ID_ varchar(64),
-    primary key (ID_)
-);
-
-create table ACT_ID_INFO (
-    ID_ varchar(64),
-    REV_ integer,
-    USER_ID_ varchar(64),
-    TYPE_ varchar(64),
-    KEY_ varchar(255),
-    VALUE_ varchar(255),
-    PASSWORD_ bytea,
-    PARENT_ID_ varchar(255),
-    primary key (ID_)
-);
-
-create index ACT_IDX_MEMB_GROUP on ACT_ID_MEMBERSHIP(GROUP_ID_);
-alter table ACT_ID_MEMBERSHIP
-    add constraint ACT_FK_MEMB_GROUP
-    foreign key (GROUP_ID_)
-    references ACT_ID_GROUP (ID_);
-
-create index ACT_IDX_MEMB_USER on ACT_ID_MEMBERSHIP(USER_ID_);
-alter table ACT_ID_MEMBERSHIP
-    add constraint ACT_FK_MEMB_USER
-    foreign key (USER_ID_)
-    references ACT_ID_USER (ID_);
 
 commit;
