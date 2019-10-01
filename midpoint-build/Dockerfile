@@ -1,4 +1,4 @@
-FROM debian:9 AS build
+FROM debian:buster AS build
 
 #ENV MP_BRANCH=v3.8
 ARG MP_BRANCH
@@ -10,7 +10,7 @@ RUN apt-get update && \
 RUN adduser -disabled-password --gecos "user" user
 
 RUN apt-get update && \
-  apt-get install -y openjdk-8-jdk-headless git maven procps
+  apt-get install -y openjdk-11-jdk-headless git maven procps
 
 USER user
 RUN git clone https://github.com/Evolveum/midpoint.git /home/user/midpoint
@@ -25,13 +25,13 @@ RUN mvn install -DskipTests=true
 
 CMD ["/bin/bash"]
 
-FROM debian:9
+FROM debian:buster
 
 #ENV MP_VERSION 3.8
 ENV MP_DIR /opt/midpoint
 
 RUN apt-get update && apt-get dist-upgrade -y \
- && apt-get install -y openjdk-8-jre-headless wget postgresql-client
+ && apt-get install -y openjdk-11-jre-headless wget postgresql-client
 
 COPY --from=build /home/user/midpoint/dist/target/midpoint-*-dist.tar.gz ${MP_DIR}/
 
