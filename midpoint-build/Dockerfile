@@ -21,6 +21,7 @@ VOLUME ["/home/user/.m2"]
 
 WORKDIR /home/user/midpoint
 RUN git checkout "${MP_BRANCH}"
+ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64/
 RUN mvn install -DskipTests=true
 
 CMD ["/bin/bash"]
@@ -29,6 +30,7 @@ FROM debian:buster
 
 #ENV MP_VERSION 3.8
 ENV MP_DIR /opt/midpoint
+ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64/
 
 RUN apt-get update && apt-get dist-upgrade -y \
  && apt-get install -y openjdk-11-jre-headless wget postgresql-client
